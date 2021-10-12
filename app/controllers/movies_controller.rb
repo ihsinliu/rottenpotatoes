@@ -10,10 +10,12 @@ class MoviesController < ApplicationController
   def index
     @all_ratings = Movie.select(:rating).map(&:rating).uniq
     session[:ratings] = @all_ratings unless session.has_key?(:ratings)
-    session[:ratings] = params[:ratings].keys if params.has_key?(:ratings) and 
-                                                    !params[:ratings].empty?
+    if params.has_key?(:ratings) and !params[:ratings].empty?
+      session[:ratings] = params[:ratings].keys 
+    end
     @ratings_to_show = session[:ratings]
     @ratings_to_show_hash = Hash[@ratings_to_show.collect {|key| [key, '1']}]
+    
     if !session.key?(:sort_by)
       @all_ratings_hash = Hash[@all_ratings.collect {|key| [key, '1']}]
       session[:sort_by] = '' if !session.key?(:sort_by)

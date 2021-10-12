@@ -7,7 +7,21 @@ class MoviesController < ApplicationController
   end
 
   def index
-    @movies = Movie.all
+    @all_ratings = Movie.select(:rating).map(&:rating).uniq
+    session[:ratings] = @all_ratings unless session.has_key?(:ratings)
+    if params.has_key?(:ratings) and !params[:ratings].empty?
+      session[:ratings] = params[:ratings].keys
+    end
+    @ratings_to_show = session[:ratings]
+    if params.has_key?(:ratings_to_show)
+      session[:ratings_to_show] = params[:ratings_to_show]
+    end
+    if session.has_key?(:ratings_to_show)
+      @movies = Movie.order(session[:ratings_to_show]).where(:rating => @ratings_to_show)
+    else
+      @movies = Movie.where(:rating => @ratings_to_show)
+    end
+    
   end
 
   def new
@@ -37,6 +51,8 @@ class MoviesController < ApplicationController
     flash[:notice] = "Movie '#{@movie.title}' deleted."
     redirect_to movies_path
   end
+  
+  @ratings_to_show = Array.new
 
   private
   # Making "internal" methods private is not required, but is a common practice.

@@ -6,22 +6,31 @@ class MoviesController < ApplicationController
     # will render app/views/movies/show.<extension> by default
   end
 
+
   def index
     @all_ratings = Movie.select(:rating).map(&:rating).uniq
     session[:ratings] = @all_ratings unless session.has_key?(:ratings)
-    if params.has_key?(:ratings) and !params[:ratings].empty?
-      session[:ratings] = params[:ratings].keys
-    end
+    session[:ratings] = params[:ratings].keys if params.has_key?(:ratings) and 
+                                                    !params[:ratings].empty?
     @ratings_to_show = session[:ratings]
-    if params.has_key?(:ratings_to_show)
-      session[:ratings_to_show] = params[:ratings_to_show]
-    end
-    if session.has_key?(:ratings_to_show)
-      @movies = Movie.order(session[:ratings_to_show]).where(:rating => @ratings_to_show)
-    else
-      @movies = Movie.where(:rating => @ratings_to_show)
+    @ratings_to_show_hash = Hash[@ratings_to_show.collect {|key| [key, '1']}]
+    if !session.key?(:sort_by)
+      @all_ratings_hash = Hash[@all_ratings.collect {|key| [key, '1']}]
+      session[:sort_by] = '' if !session.key?(:sort_by)
+      redirect_to movies_path(:ratings => @all_ratings_hash, :sort_by => '') and return
     end
     
+    if (!params.has_key?(:ratings) && session.key?(:ratings)) ||
+      (!params.has_key?(:sort_by) && session.key?(:sort_by))
+      redirect_to movies_path(:ratings => Hash[session[:ratings].collect {|key| [key, '1']}], :sort_by => session[:sort_by]) and return
+    end
+    
+    @movies = Movie.with_ratings(@ratings_to_show)
+    
+    @movies = @movies.order(params[:sort_by]) if params[:sort_by] != ''
+    session[:sort_by] = params[:sort_by]
+    @title_header = (params[:sort_by]=='title') ? 'hilite bg-warning' : ''
+    @release_date_header = (params[:sort_by]=='release_date') ? 'hilite bg-warning' : ''
   end
 
   def new
